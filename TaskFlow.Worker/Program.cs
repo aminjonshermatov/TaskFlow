@@ -19,11 +19,37 @@ await call.RequestStream.WriteAsync(new WorkerEvent
 
 Console.WriteLine("Hello send. Waiting for coordinator");
 
-while (await call.ResponseStream.MoveNext(CancellationToken.None))
+var receiveTask = Task.Run(async () =>
 {
-    var message = call.ResponseStream.Current;
-    if (message.PayloadCase == CoordinatorEvent.PayloadOneofCase.Welcome)
+    while (await call.ResponseStream.MoveNext(CancellationToken.None))
     {
-        Console.WriteLine($"Connected to {message.Welcome.CoordinatorId}");
+        var message = call.ResponseStream.Current;
+        if (message.PayloadCase == CoordinatorEvent.PayloadOneofCase.Welcome)
+        {
+            Console.WriteLine($"Connected to {message.Welcome.CoordinatorId}");
+        }
     }
+});
+
+using var shutdown = new CancellationTokenSource();
+
+Console.CancelKeyPress += (_, eventArgs) =>
+{
+    eventArgs.Cancel = true;
+    shutdown.Cancel();
+};
+
+try
+{
+    await Task.Delay(Timeout.InfiniteTimeSpan, shutdown.Token);
 }
+catch (OperationCanceledException) when (shutdown.IsCancellationRequested)
+{
+    Console.WriteLine("Stopping worker...");
+}
+finally
+{
+    await call.RequestStream.CompleteAsync();
+}
+
+await receiveTask;
