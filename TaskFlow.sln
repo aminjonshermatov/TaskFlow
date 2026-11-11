@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskFlow.Contracts", "TaskFlow.Contracts\TaskFlow.Contracts.csproj", "{9FD8DB0E-FA4B-4989-AECF-22CA389772EE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskFlow.Coordinator", "TaskFlow.Coordinator\TaskFlow.Coordinator.csproj", "{C2FE43DB-4215-4A2E-BBD8-5D92F3383FF4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskFlow.Worker", "TaskFlow.Worker\TaskFlow.Worker.csproj", "{5170ABB7-3F39-40CA-8FA9-6598E72D546C}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9FD8DB0E-FA4B-4989-AECF-22CA389772EE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9FD8DB0E-FA4B-4989-AECF-22CA389772EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9FD8DB0E-FA4B-4989-AECF-22CA389772EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9FD8DB0E-FA4B-4989-AECF-22CA389772EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2FE43DB-4215-4A2E-BBD8-5D92F3383FF4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2FE43DB-4215-4A2E-BBD8-5D92F3383FF4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2FE43DB-4215-4A2E-BBD8-5D92F3383FF4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2FE43DB-4215-4A2E-BBD8-5D92F3383FF4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5170ABB7-3F39-40CA-8FA9-6598E72D546C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5170ABB7-3F39-40CA-8FA9-6598E72D546C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5170ABB7-3F39-40CA-8FA9-6598E72D546C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5170ABB7-3F39-40CA-8FA9-6598E72D546C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
