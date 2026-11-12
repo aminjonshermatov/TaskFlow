@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 
 namespace TaskFlow.Coordinator.Workers;
 
-public class WorkerRegistry : IWorkerRegistry
+public sealed class WorkerRegistry : IWorkerRegistry
 {
     private readonly ConcurrentDictionary<KeyValuePair<Guid, string>, WorkerSession> _workers = new();
     
@@ -20,8 +20,6 @@ public class WorkerRegistry : IWorkerRegistry
 
     public IReadOnlyCollection<WorkerInfo> GetAll()
     {
-        return _workers.Values
-            .Select(x => x.WorkerInfo)
-            .ToArray();
+        return [.._workers.Values.Select(x => x.WorkerInfo)];
     }
 }

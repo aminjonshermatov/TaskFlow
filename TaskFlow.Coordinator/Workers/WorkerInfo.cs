@@ -1,3 +1,3 @@
 namespace TaskFlow.Coordinator.Workers;
 
-public record WorkerInfo(string Id, string Name);
+public sealed record WorkerInfo(string Id, string Name);

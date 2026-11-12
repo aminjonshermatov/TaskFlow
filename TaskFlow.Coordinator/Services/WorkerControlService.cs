@@ -73,6 +73,18 @@ public class WorkerControlService(
                 }
             }
         }
+        catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+        {
+            logger.LogInformation("Worker stream was cancelled.");
+        }
+        catch (IOException)
+        {
+            logger.LogInformation("Worker stream was disconnected.");
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
+        {
+            logger.LogInformation("Worker stream was cancelled by client.");
+        }
         finally
         {
             if (session is not null)

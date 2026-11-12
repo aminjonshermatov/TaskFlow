@@ -6,6 +6,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskFlow.Coordinator", "Tas
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskFlow.Worker", "TaskFlow.Worker\TaskFlow.Worker.csproj", "{5170ABB7-3F39-40CA-8FA9-6598E72D546C}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{A6856C52-F388-477B-A2AA-BFBEC059B768}"
+	ProjectSection(SolutionItems) = preProject
+		compose.yaml = compose.yaml
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TaskFlow.Migrator", "TaskFlow.Migrator\TaskFlow.Migrator.csproj", "{D25B79A6-FC5A-4CE4-9C24-8AA8749DFA9A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -24,5 +31,9 @@ Global
 		{5170ABB7-3F39-40CA-8FA9-6598E72D546C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5170ABB7-3F39-40CA-8FA9-6598E72D546C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5170ABB7-3F39-40CA-8FA9-6598E72D546C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D25B79A6-FC5A-4CE4-9C24-8AA8749DFA9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D25B79A6-FC5A-4CE4-9C24-8AA8749DFA9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D25B79A6-FC5A-4CE4-9C24-8AA8749DFA9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D25B79A6-FC5A-4CE4-9C24-8AA8749DFA9A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
