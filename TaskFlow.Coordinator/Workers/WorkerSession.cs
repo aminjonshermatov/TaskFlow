@@ -9,7 +9,7 @@ public sealed class WorkerSession
 
     public required WorkerInfo WorkerInfo { get; init; }
 
-    public DateTime ConnectedAt { get; init; }
+    public DateTimeOffset ConnectedAt { get; init; }
 
     public Channel<CoordinatorEvent> Outbound { get; } =
         Channel.CreateUnbounded<CoordinatorEvent>(

@@ -6,6 +6,7 @@ namespace TaskFlow.Coordinator.Services;
 
 public class WorkerControlService(
     IWorkerRegistry workerRegistry,
+    TimeProvider timeProvider,
     ILogger<WorkerControlService> logger) : WorkerControl.WorkerControlBase
 {
     public override async Task Connect(
@@ -37,7 +38,7 @@ public class WorkerControlService(
                         {
                             Id = Guid.NewGuid(),
                             WorkerInfo = new WorkerInfo(hello.WorkerId, hello.WorkerName),
-                            ConnectedAt = DateTime.UtcNow
+                            ConnectedAt = timeProvider.GetUtcNow()
                         };
                         if (!workerRegistry.Register(candidateSession))
                         {
