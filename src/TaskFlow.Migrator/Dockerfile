@@ -1,9 +1,9 @@
 ﻿FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /src
+WORKDIR /taskflow
 
 COPY . .
 
-RUN dotnet publish TaskFlow.Migrator/TaskFlow.Migrator.csproj \
+RUN dotnet publish src/TaskFlow.Migrator/TaskFlow.Migrator.csproj \
     -c Release \
     -o /app/publish \
     /p:UseAppHost=false

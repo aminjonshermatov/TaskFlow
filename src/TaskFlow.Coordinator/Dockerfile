@@ -1,7 +1,7 @@
 ﻿FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /src
+WORKDIR /taskflow
 COPY . .
-RUN dotnet publish TaskFlow.Coordinator/TaskFlow.Coordinator.csproj \
+RUN dotnet publish src/TaskFlow.Coordinator/TaskFlow.Coordinator.csproj \
     -c Release \
     -o /app/publish \
     /p:UseAppHost=false

@@ -16,7 +16,7 @@
   coordinator:
     build:
       context: .
-      dockerfile: TaskFlow.Coordinator/Dockerfile
+      dockerfile: src/TaskFlow.Coordinator/Dockerfile
     environment:
       ASPNETCORE_ENVIRONMENT: Container
       ConnectionStrings__TaskFlow: Host=postgres;Port=5432;Database=taskflow;Username=taskflow;Password=${POSTGRES_PASSWORD}
@@ -31,7 +31,7 @@
   worker:
     build:
       context: .
-      dockerfile: TaskFlow.Worker/Dockerfile
+      dockerfile: src/TaskFlow.Worker/Dockerfile
     environment:
       TASKFLOW_COORDINATOR_URL: http://coordinator:8081
       TASKFLOW_WORKER_ID: 123
@@ -42,7 +42,7 @@
   migrator:
     build:
       context: .
-      dockerfile: TaskFlow.Migrator/Dockerfile
+      dockerfile: src/TaskFlow.Migrator/Dockerfile
     environment:
       ConnectionStrings__TaskFlow: Host=postgres;Port=5432;Database=taskflow;Username=taskflow;Password=${POSTGRES_PASSWORD}
     depends_on:
