@@ -15,6 +15,7 @@ public class WorkerControlService(
         ServerCallContext context)
     {
         WorkerSession? session = null;
+        Task? writeTask = null;
         try
         {
             logger.LogInformation("Worker stream connected.");
@@ -40,26 +41,30 @@ public class WorkerControlService(
                             WorkerInfo = new WorkerInfo(hello.WorkerId, hello.WorkerName),
                             ConnectedAt = timeProvider.GetUtcNow()
                         };
+                        await candidateSession.EnqueueAsync(
+                            new CoordinatorEvent
+                            {
+                                Welcome = new CoordinatorWelcome
+                                {
+                                    CoordinatorId = "coordinator_1"
+                                }
+                            },
+                            context.CancellationToken);
+
                         if (!workerRegistry.Register(candidateSession))
                         {
+                            candidateSession.CompleteOutgoing();
                             throw new RpcException(new Status(
                                 StatusCode.AlreadyExists,
                                 $"Could not register worker '{hello.WorkerId}'."));
                         }
                         session = candidateSession;
+                        writeTask = WriteOutgoingAsync(session, responseStream, context.CancellationToken);
                         logger.LogInformation(
                             "Worker registered: {WorkerId} ({WorkerName}), session {SessionId}",
                             hello.WorkerId,
                             hello.WorkerName,
                             session.Id);
-
-                        await responseStream.WriteAsync(new CoordinatorEvent
-                        {
-                            Welcome = new CoordinatorWelcome
-                            {
-                                CoordinatorId = "coordinator_1"
-                            }
-                        });
                         break;
                     case WorkerEvent.PayloadOneofCase.Heartbeat:
                         if (session is null)
@@ -90,9 +95,8 @@ public class WorkerControlService(
         {
             if (session is not null)
             {
-                var removed = workerRegistry.Unregister(
-                    session.WorkerInfo.Id,
-                    session.Id);
+                var removed = workerRegistry.Unregister(session.WorkerInfo.Id, session.Id);
+                session.CompleteOutgoing();
 
                 logger.LogInformation(
                     "Worker unregistered: {WorkerId}, session {SessionId}, removed: {Removed}",
@@ -100,6 +104,31 @@ public class WorkerControlService(
                     session.Id,
                     removed);
             }
+            if (writeTask is not null)
+            {
+                try
+                {
+                    await writeTask;
+                }
+                catch (OperationCanceledException) when (context.CancellationToken.IsCancellationRequested)
+                {
+                }
+                catch (IOException exception)
+                {
+                    logger.LogDebug(exception, "Worker response stream closed.");
+                }
+            }
+        }
+    }
+    
+    private static async Task WriteOutgoingAsync(
+        WorkerSession session,
+        IServerStreamWriter<CoordinatorEvent> responseStream,
+        CancellationToken cancellationToken)
+    {
+        await foreach (var @event in session.ReadOutgoingAsync(cancellationToken))
+        {
+            await responseStream.WriteAsync(@event, cancellationToken);
         }
     }
 }

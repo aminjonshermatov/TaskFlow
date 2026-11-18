@@ -13,12 +13,15 @@ message WorkerEvent {
   oneof payload {
     WorkerHello hello = 1;
     WorkerHeartbeat heartbeat = 2;
+    JobStarted job_started = 3;
+    JobFinished job_finished = 4;
   }
 }
 
 message CoordinatorEvent {
   oneof payload {
     CoordinatorWelcome welcome = 1;
+    JobAssignment job_assignment = 2;
   }
 }
 
@@ -32,4 +35,28 @@ message WorkerHeartbeat {
 
 message CoordinatorWelcome {
   string coordinator_id = 1;
+}
+
+message JobStarted {
+  string job_id = 1;
+}
+
+message JobFinished {
+  string job_id = 1;
+  JobExecutionResult result = 2;
+  optional int32 exit_code = 3;
+}
+
+message JobAssignment {
+  string job_id = 1;
+  string command = 2;
+  int32 max_duration_seconds = 3;
+}
+
+enum JobExecutionResult {
+  JOB_EXECUTION_RESULT_UNSPECIFIED = 0;
+  JOB_EXECUTION_RESULT_SUCCEEDED = 1;
+  JOB_EXECUTION_RESULT_FAILED = 2;
+  JOB_EXECUTION_RESULT_TIMED_OUT = 3;
+  JOB_EXECUTION_RESULT_CANCELED = 4;
 }
