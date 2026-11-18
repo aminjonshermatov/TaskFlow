@@ -1,7 +1,7 @@
 ﻿FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
-WORKDIR /src
+WORKDIR /taskflow
 COPY . .
-RUN dotnet publish TaskFlow.Worker/TaskFlow.Worker.csproj \
+RUN dotnet publish src/TaskFlow.Coordinator/TaskFlow.Coordinator.csproj \
     -c Release \
     -o /app/publish \
     /p:UseAppHost=false
@@ -9,4 +9,4 @@ RUN dotnet publish TaskFlow.Worker/TaskFlow.Worker.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /app/publish .
-ENTRYPOINT ["dotnet", "TaskFlow.Worker.dll"]
+ENTRYPOINT ["dotnet", "TaskFlow.Coordinator.dll"]

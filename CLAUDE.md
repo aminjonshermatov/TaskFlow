@@ -21,7 +21,7 @@ It is a **learning project**: the owner is moving from C++ to C# and wants to wr
 
 ## Layout (target after milestone M0, see spec §10.3)
 
-Until M0 is done the projects still sit in the repo root next to `TaskFlow.sln`, and the gRPC worker protocol is being removed.
+Projects live in `src/` and the solution is `TaskFlow.slnx` (#1). Until M0 is done, `TaskFlow.ServiceDefaults` and the test projects do not exist yet, and the gRPC worker protocol is being removed (#3).
 
 - `src/TaskFlow.Coordinator` — REST API + SSE, Dispatcher (outbox relay), Projector (events → Postgres)
 - `src/TaskFlow.Worker` — pulls jobs from JetStream, runs `bash -c`, streams logs, publishes events
@@ -32,8 +32,6 @@ Until M0 is done the projects still sit in the repo root next to `TaskFlow.sln`,
 - `ui/taskflow-ui` — Angular
 
 ## Commands
-
-Before M0 use `TaskFlow.sln` instead of `TaskFlow.slnx`.
 
 ```bash
 dotnet build TaskFlow.slnx
