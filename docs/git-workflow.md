@@ -9,7 +9,7 @@ Trunk-based development: одна долгоживущая ветка `master` �
 
 | Тип | Когда | Пример |
 |---|---|---|
-| `feat` | новая функциональность | `feat/16-migrator-nats-provisioning` |
+| `feat` | новая функциональность | `feat/10-migrator-log-stream` |
 | `fix` | исправление ошибки | `fix/31-dispatcher-timeout` |
 | `refactor` | изменение структуры без изменения поведения | `refactor/13-remove-grpc-worker` |
 | `test` | только тесты | `test/18-integration-fixture` |
@@ -43,7 +43,7 @@ PR — это одно связное изменение, которое мож�
 
 ```bash
 git switch master && git pull
-git switch -c feat/16-migrator-nats-provisioning
+git switch -c feat/10-migrator-log-stream
 # … работа, коммиты …
 git fetch && git rebase origin/master          # подтянуть свежий master
 git push -u origin HEAD                      # открыть PR (можно draft)

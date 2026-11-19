@@ -1,8 +1,8 @@
 # TaskFlow
 
-Распределённый исполнитель bash-задач: web-UI → Coordinator → NATS JetStream → Worker-ы, состояние в PostgreSQL, наблюдаемость через OpenTelemetry → Grafana.
+Распределённый исполнитель bash-задач: web-UI → Coordinator → RabbitMQ (MassTransit) → Worker-ы, состояние в PostgreSQL (EF Core, saga MassTransit), наблюдаемость через OpenTelemetry → Grafana.
 
-Учебный проект: изучение C#/.NET после C++ на системе, устроенной «почти как в проде» — несколько координаторов и воркеров, outbox, at-most-once/at-least-once, ретраи, отмена, live-логи, k8s.
+Учебный проект: изучение C#/.NET после C++ на системе, устроенной «почти как в проде» — несколько координаторов и воркеров, saga, outbox/inbox, at-most-once/at-least-once, ретраи, отмена, live-логи, k8s.
 
 ## Документация
 
@@ -12,7 +12,7 @@
 
 ## Стек
 
-.NET 10 · ASP.NET Core (Minimal API, SSE) · Dapper + DbUp · PostgreSQL · NATS JetStream (`NATS.Net`) · OpenTelemetry → Grafana LGTM · Angular · Docker Compose · k3d (Kubernetes) · xUnit + Testcontainers
+.NET 10 · ASP.NET Core (Minimal API, SSE) · EF Core + PostgreSQL · RabbitMQ 4 (quorum-очереди, Streams) · MassTransit 8 · OpenTelemetry → Grafana LGTM · Angular · Docker Compose · k3d (Kubernetes) · xUnit + Testcontainers
 
 ## Быстрый старт
 
@@ -20,7 +20,7 @@
 
 ```bash
 cp .env.example .env                                   # задать POSTGRES_PASSWORD
-docker compose up postgres nats lgtm migrator          # инфраструктура; сервисы — из IDE
+docker compose up postgres rabbitmq lgtm migrator      # инфраструктура; сервисы — из IDE
 docker compose --profile full up --scale worker=3      # всё в контейнерах
 ```
 
@@ -28,7 +28,7 @@ docker compose --profile full up --scale worker=3      # всё в контей�
 |---|---|
 | API | http://localhost:8080 (OpenAPI: `/openapi/v1.json`) |
 | Grafana | http://localhost:3000 |
-| NATS monitoring | http://localhost:8222 |
+| RabbitMQ management | http://localhost:15672 |
 
 > Compose-файл приводится к этому виду в рамках этапа M0.
 
@@ -36,10 +36,11 @@ docker compose --profile full up --scale worker=3      # всё в контей�
 
 ```
 src/
-  TaskFlow.Coordinator/     REST API, Dispatcher, Projector
+  TaskFlow.Coordinator/     REST API, Dispatcher, saga JobStateMachine
   TaskFlow.Worker/          выполнение job-ов
-  TaskFlow.Contracts/       сообщения NATS, имена subjects/streams
-  TaskFlow.Migrator/        миграции БД + создание NATS streams/KV
+  TaskFlow.Contracts/       сообщения, имя stream-а логов
+  TaskFlow.Persistence/     EF Core: DbContext, сущности, миграции
+  TaskFlow.Migrator/        миграции БД + создание stream-а логов
   TaskFlow.ServiceDefaults/ OpenTelemetry, health checks
 tests/
 ui/taskflow-ui/
@@ -59,7 +60,7 @@ docs/
   - `/explain-cs <понятие>` — объяснение концепции C# через C++
   - `/spec-update <изменение>` — согласованная правка спеки с версией и changelog
 - `.claude/settings.json` — разрешения и hooks:
-  - запрет правки уже закоммиченных миграций (они append-only);
+  - запрет правки уже закоммиченных миграций EF Core (они append-only);
   - форматирование `.cs`-файлов после правок Claude (`dotnet format whitespace`).
 
 Hooks используют `jq`; без него они просто ничего не делают.

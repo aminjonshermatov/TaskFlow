@@ -29,21 +29,28 @@
 - No blocking calls inside `lock`; no `await` inside `lock` (does not compile — but watch for `Monitor`/`SemaphoreSlim` misuse).
 
 ## DI and hosting
-- Lifetimes: a singleton does not capture a scoped service (e.g. `DbContext`-like or per-request objects).
+- Lifetimes: a singleton does not capture a scoped service (`DbContext`, per-request objects); in a `BackgroundService` use `IServiceScopeFactory` and a scope per unit of work.
 - `BackgroundService.ExecuteAsync` loops honor `stoppingToken` and do not crash the host on one failure (log + backoff).
 - Options validated on start (`ValidateDataAnnotations().ValidateOnStart()` or `IValidateOptions`).
 
-## Data (Dapper / Postgres)
-- Parameters, never string-concatenated SQL.
-- Statements that must be atomic share one `NpgsqlTransaction`; the transaction is passed to every Dapper call.
-- `FOR UPDATE SKIP LOCKED` batches are short; network calls inside a transaction have a timeout (spec §5).
-- Migrations are new append-only scripts.
+## Data (EF Core / Postgres, spec §5)
+- `DbContext` is scoped and never shared between threads or concurrent operations; no `DbContext` in a singleton.
+- Read-only queries use `AsNoTracking()`; no N+1 (lazy loading off, explicit `Include`/projection).
+- Raw SQL only through `FromSql`/`SqlQuery`/`ExecuteSql` with interpolated parameters — never `FromSqlRaw` with string concatenation.
+- Work that must be atomic shares one `SaveChangesAsync` or one explicit transaction; the bus outbox writes into the same `DbContext`.
+- `FOR UPDATE SKIP LOCKED` batches are short; no network calls inside a transaction (publish goes to the outbox).
+- Bulk changes use `ExecuteUpdateAsync`/`ExecuteDeleteAsync` instead of loading entities.
+- Migrations are new and append-only; the model snapshot matches the model (`dotnet ef migrations has-pending-model-changes`).
 
-## NATS / messaging (spec §4, §6.2)
-- Ack/Nak/Term only **after** the event about the job got its PubAck.
-- `Nats-Msg-Id` set where deduplication is expected.
-- Subject/stream names come from `TaskFlow.Contracts`.
-- Projector work is idempotent (inbox) and respects the `attempt` fencing token.
+## MassTransit / RabbitMQ (spec §4, §6.2, ADR-10)
+- `run-job` endpoint: no `UseMessageRetry`, no `UseDelayedRedelivery`; `PrefetchCount = 1`, `ConcurrentMessageLimit = 1`.
+- A `RunJob` with `ReceiveContext.Redelivered == true` is never executed — only `AttemptLost` is published.
+- Events carry `attempt`; the saga ignores events whose attempt differs from `CurrentAttempt` (fencing).
+- State changes and outgoing messages go through the EF Core outbox in one transaction; inbox is enabled on saga/consumer endpoints.
+- Consumers pass `context.CancellationToken` down; no fire-and-forget `Publish` without `await`.
+- Message types are records from `TaskFlow.Contracts`; renaming a type or namespace is a breaking change (exchange names).
+- Saga repository: EF Core, pessimistic concurrency, Postgres lock statements.
+- Job logs go to the RabbitMQ stream via `RabbitMQ.Stream.Client`, not through MassTransit.
 
 ## Logging and telemetry
 - Structured templates (`"Job {JobId} started"`), not string interpolation in log calls.

@@ -17,8 +17,8 @@ The spec is written in Russian; keep its style and terminology.
    - §1 features (MVP vs backlog), §1.3 guarantees
    - §2 components and key decisions
    - §3 state machine, sequence diagram, failure table
-   - §4 NATS streams/consumers/KV/messages
-   - §5 schema, SQL, Dispatcher, cancel
+   - §4 RabbitMQ queues/stream and messages
+   - §5 EF Core model, saga attempts, Idempotency-Key, Dispatcher, cancel
    - §6 worker algorithm and guarantees
    - §7 API, §8 UI, §9 metrics
    - §11 ADR, §12 milestones and DoD, §13 timeouts, §15 DAG, §16 open questions
