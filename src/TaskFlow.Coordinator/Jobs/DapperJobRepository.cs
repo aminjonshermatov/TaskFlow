@@ -62,43 +62,4 @@ public sealed class DapperJobRepository(NpgsqlDataSource dataSource) : IJobRepos
 
     return await connection.QuerySingleOrDefaultAsync<Job>(command);
   }
-
-  private const string TryAssignNext = """
-        with next_job as (
-            select id
-            from jobs
-            where status = 'pending'
-            order by created_at
-            for update skip locked
-            limit 1
-        )
-        update jobs as job set
-            status = 'assigned'
-            worker_id = @WorkerId
-        from next_job
-        where job.id = next_job.id
-        returning
-            job.id as Id,
-            job.command as Command,
-            job.max_duration_seconds as MaxDurationSeconds,
-            job.status as Status,
-            job.worker_id as WorkerId,
-            job.exit_code as ExitCode,
-            job.created_at as CreatedAt,
-            job.started_at as StartedAt,
-            job.finished_at as FinishedAt
-        ;
-        """;
-
-  public async Task<Job?> TryAssignNextAsync(string workerId, CancellationToken cancellationToken)
-  {
-    await using var connection = await dataSource.OpenConnectionAsync(cancellationToken);
-    var command = new CommandDefinition(
-        TryAssignNext,
-        new { WorkerId = workerId },
-        cancellationToken: cancellationToken
-    );
-
-    return connection.QuerySingleOrDefault<Job?>(command);
-  }
 }

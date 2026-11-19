@@ -32,13 +32,8 @@
     build:
       context: .
       dockerfile: src/TaskFlow.Worker/Dockerfile
-    environment:
-      TASKFLOW_COORDINATOR_URL: http://coordinator:8081
-      TASKFLOW_WORKER_ID: 123
-    depends_on:
-      - coordinator
     restart: unless-stopped
-    
+
   migrator:
     build:
       context: .
