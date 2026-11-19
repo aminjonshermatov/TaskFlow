@@ -36,11 +36,12 @@ public partial class WorkerControlService(
             }
             var hello = message.Hello;
 
+            var now = timeProvider.GetUtcNow();
             var candidateSession = new WorkerSession
             {
-              Id = Guid.CreateVersion7(),
+              Id = Guid.CreateVersion7(now),
               WorkerInfo = new WorkerInfo(hello.WorkerId, hello.WorkerName),
-              ConnectedAt = timeProvider.GetUtcNow()
+              ConnectedAt = now
             };
             await candidateSession.EnqueueAsync(
                 new CoordinatorEvent

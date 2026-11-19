@@ -8,6 +8,7 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- to disable error - provide xml file -->
     <NoWarn>$(NoWarn);CS1591;CS1573;CS1712</NoWarn>
   </PropertyGroup>
 </Project>
