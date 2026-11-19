@@ -1,4 +1,4 @@
-﻿using DbUp;
+using DbUp;
 
 var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__TaskFlow")
                        ?? throw new InvalidOperationException(
@@ -8,8 +8,8 @@ var scriptsDirectory = Path.Combine(AppContext.BaseDirectory, "Scripts");
 
 if (!Directory.Exists(scriptsDirectory))
 {
-    throw new DirectoryNotFoundException(
-        $"Migrations directory was not found: {scriptsDirectory}");
+  throw new DirectoryNotFoundException(
+      $"Migrations directory was not found: {scriptsDirectory}");
 }
 
 var upgrader = DeployChanges.To
@@ -24,8 +24,8 @@ var result = upgrader.PerformUpgrade();
 
 if (!result.Successful)
 {
-    Console.Error.WriteLine(result.Error);
-    return 1;
+  Console.Error.WriteLine(result.Error);
+  return 1;
 }
 
 Console.WriteLine("Database is up to date.");

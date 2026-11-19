@@ -15,15 +15,15 @@ public sealed record JobHttpResponse(
     DateTimeOffset? StartedAt,
     DateTimeOffset? FinishedAt)
 {
-    public static JobHttpResponse FromDomain(Job job) =>
-        new(
-            job.Id,
-            job.Command,
-            job.MaxDurationSeconds,
-            job.Status.ToString().ToLowerInvariant(),
-            job.WorkerId,
-            job.ExitCode,
-            job.CreatedAt,
-            job.StartedAt,
-            job.FinishedAt);
+  public static JobHttpResponse FromDomain(Job job) =>
+      new(
+          job.Id,
+          job.Command,
+          job.MaxDurationSeconds,
+          job.Status.ToString().ToLowerInvariant(),
+          job.WorkerId,
+          job.ExitCode,
+          job.CreatedAt,
+          job.StartedAt,
+          job.FinishedAt);
 }
