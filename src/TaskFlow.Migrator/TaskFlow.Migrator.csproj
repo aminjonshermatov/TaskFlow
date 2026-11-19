@@ -1,24 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <OutputType>Exe</OutputType>
+      <OutputType>Exe</OutputType>
     </PropertyGroup>
-
+    
+    <ItemGroup>
+      <PackageReference Include="dbup-postgresql" />
+    </ItemGroup>
+    
     <ItemGroup>
       <Content Include="..\..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
     </ItemGroup>
-
+    
     <ItemGroup>
-      <PackageReference Include="dbup-postgresql" Version="7.0.1" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <None Update="Scripts/**/*.sql">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-            <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-        </None>
+      <None Update="Scripts/**/*.sql">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </None>
     </ItemGroup>
 
 </Project>
