@@ -1,0 +1,153 @@
+root = true
+
+# All files
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 2
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.md]
+# Two trailing spaces are a hard line break in Markdown.
+trim_trailing_whitespace = false
+
+# C# files
+[*.cs]
+tab_width = 2
+
+#### Formatting ####
+# Defaults match the .NET conventions; make violations visible in build
+# (requires <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>).
+dotnet_diagnostic.IDE0055.severity = warning
+
+#### Usings ####
+dotnet_sort_system_directives_first = true
+dotnet_separate_import_directive_groups = true
+csharp_using_directive_placement = outside_namespace
+dotnet_diagnostic.IDE0065.severity = warning
+# Unused usings. In build this also needs <GenerateDocumentationFile>true</GenerateDocumentationFile>.
+dotnet_diagnostic.IDE0005.severity = warning
+
+#### Code style ####
+# File-scoped namespaces
+csharp_style_namespace_declarations = file_scoped
+dotnet_diagnostic.IDE0161.severity = warning
+
+# Fields that are never reassigned must be readonly (like const members in C++)
+dotnet_style_readonly_field = true
+dotnet_diagnostic.IDE0044.severity = warning
+
+# Explicit accessibility modifiers
+dotnet_style_require_accessibility_modifiers = for_non_interface_members
+dotnet_diagnostic.IDE0040.severity = warning
+
+# Local functions that capture nothing should be static
+csharp_prefer_static_local_function = true
+dotnet_diagnostic.IDE0062.severity = warning
+
+# Explicit types instead of var (owner's choice; not enforced)
+csharp_style_var_for_built_in_types = false:silent
+csharp_style_var_when_type_is_apparent = false:silent
+csharp_style_var_elsewhere = false:silent
+
+# Expression-bodied members: allowed for short members, block bodies for methods
+csharp_style_expression_bodied_methods = false:silent
+csharp_style_expression_bodied_constructors = false:silent
+csharp_style_expression_bodied_operators = false:silent
+csharp_style_expression_bodied_local_functions = false:silent
+
+# Hints in the IDE only
+csharp_style_prefer_primary_constructors = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+dotnet_style_prefer_collection_expression = when_types_loosely_match:suggestion
+dotnet_style_namespace_match_folder = true:suggestion
+
+#### Naming ####
+dotnet_diagnostic.IDE1006.severity = warning
+
+# Symbols
+dotnet_naming_symbols.interfaces.applicable_kinds = interface
+dotnet_naming_symbols.interfaces.applicable_accessibilities = *
+
+dotnet_naming_symbols.type_parameters.applicable_kinds = type_parameter
+dotnet_naming_symbols.type_parameters.applicable_accessibilities = *
+
+dotnet_naming_symbols.types_and_members.applicable_kinds = namespace, class, struct, enum, delegate, property, method, event, local_function
+dotnet_naming_symbols.types_and_members.applicable_accessibilities = *
+
+dotnet_naming_symbols.constants.applicable_kinds = field, local
+dotnet_naming_symbols.constants.applicable_accessibilities = *
+dotnet_naming_symbols.constants.required_modifiers = const
+
+dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.static_readonly_fields.applicable_accessibilities = *
+dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
+
+dotnet_naming_symbols.public_fields.applicable_kinds = field
+dotnet_naming_symbols.public_fields.applicable_accessibilities = public, internal, protected_internal
+
+dotnet_naming_symbols.private_static_fields.applicable_kinds = field
+dotnet_naming_symbols.private_static_fields.applicable_accessibilities = private, protected, private_protected
+dotnet_naming_symbols.private_static_fields.required_modifiers = static
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private, protected, private_protected
+
+dotnet_naming_symbols.locals_and_parameters.applicable_kinds = parameter, local
+dotnet_naming_symbols.locals_and_parameters.applicable_accessibilities = *
+
+# Styles
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+dotnet_naming_style.camel_case.capitalization = camel_case
+
+dotnet_naming_style.i_pascal_case.capitalization = pascal_case
+dotnet_naming_style.i_pascal_case.required_prefix = I
+
+dotnet_naming_style.t_pascal_case.capitalization = pascal_case
+dotnet_naming_style.t_pascal_case.required_prefix = T
+
+dotnet_naming_style._camel_case.capitalization = camel_case
+dotnet_naming_style._camel_case.required_prefix = _
+
+dotnet_naming_style.s_camel_case.capitalization = camel_case
+dotnet_naming_style.s_camel_case.required_prefix = s_
+
+# Rules (priority is by accessibility, then modifiers, then kinds — not file order)
+dotnet_naming_rule.interfaces_i_pascal.symbols = interfaces
+dotnet_naming_rule.interfaces_i_pascal.style = i_pascal_case
+dotnet_naming_rule.interfaces_i_pascal.severity = warning
+
+dotnet_naming_rule.type_parameters_t_pascal.symbols = type_parameters
+dotnet_naming_rule.type_parameters_t_pascal.style = t_pascal_case
+dotnet_naming_rule.type_parameters_t_pascal.severity = warning
+
+dotnet_naming_rule.types_and_members_pascal.symbols = types_and_members
+dotnet_naming_rule.types_and_members_pascal.style = pascal_case
+dotnet_naming_rule.types_and_members_pascal.severity = warning
+
+dotnet_naming_rule.constants_pascal.symbols = constants
+dotnet_naming_rule.constants_pascal.style = pascal_case
+dotnet_naming_rule.constants_pascal.severity = warning
+
+dotnet_naming_rule.static_readonly_fields_pascal.symbols = static_readonly_fields
+dotnet_naming_rule.static_readonly_fields_pascal.style = pascal_case
+dotnet_naming_rule.static_readonly_fields_pascal.severity = warning
+
+dotnet_naming_rule.public_fields_pascal.symbols = public_fields
+dotnet_naming_rule.public_fields_pascal.style = pascal_case
+dotnet_naming_rule.public_fields_pascal.severity = warning
+
+dotnet_naming_rule.private_static_fields_s_camel.symbols = private_static_fields
+dotnet_naming_rule.private_static_fields_s_camel.style = s_camel_case
+dotnet_naming_rule.private_static_fields_s_camel.severity = warning
+
+dotnet_naming_rule.private_fields_underscore_camel.symbols = private_fields
+dotnet_naming_rule.private_fields_underscore_camel.style = _camel_case
+dotnet_naming_rule.private_fields_underscore_camel.severity = warning
+
+dotnet_naming_rule.locals_and_parameters_camel.symbols = locals_and_parameters
+dotnet_naming_rule.locals_and_parameters_camel.style = camel_case
+dotnet_naming_rule.locals_and_parameters_camel.severity = warning

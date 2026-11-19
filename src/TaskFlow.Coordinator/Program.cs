@@ -11,7 +11,7 @@ var app = builder.Build();
 
 if (!app.Environment.IsEnvironment("Container"))
 {
-    app.UseHttpsRedirection();
+  app.UseHttpsRedirection();
 }
 
 app.MapGet("/ping", () => "pong");
