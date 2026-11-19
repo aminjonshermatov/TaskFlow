@@ -2,20 +2,11 @@
 
     <ItemGroup>
         <PackageReference Include="Dapper" />
-        <PackageReference Include="Grpc.AspNetCore" />
         <PackageReference Include="Npgsql" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\TaskFlow.Contracts\TaskFlow.Contracts.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Protobuf Include="..\TaskFlow.Contracts\Protos\worker.proto" GrpcServices="Server" Link="Protos\worker.proto" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <Protobuf Include="..\TaskFlow.Contracts\Protos\coordinator_query.proto" GrpcServices="Server" Link="Protos\coordinator_query.proto" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,7 +1,6 @@
 using Npgsql;
 
 using TaskFlow.Coordinator.Jobs;
-using TaskFlow.Coordinator.Workers;
 
 namespace TaskFlow.Coordinator.Bootstrap;
 
@@ -22,7 +21,6 @@ public static class ServiceCollectionExtensions
 
     services.AddSingleton(TimeProvider.System);
 
-    services.AddSingleton<IWorkerRegistry, WorkerRegistry>();
     services.AddSingleton<IJobRepository, DapperJobRepository>();
     services.AddSingleton<JobService>();
 
