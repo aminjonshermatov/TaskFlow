@@ -1,6 +1,6 @@
-# TaskFlow — спецификация (v1.2)
+# TaskFlow — спецификация (v1.3)
 
-> **Статус: утверждена, 2026-11-19** (v1.2 — брокер RabbitMQ + MassTransit, хранение на EF Core; см. «История изменений»). Базовая версия для реализации MVP. Новые фичи и изменения — следующими версиями.
+> **Статус: утверждена, 2026-11-19** (v1.2 — брокер RabbitMQ + MassTransit, хранение на EF Core; v1.3 — флаги `RetryOn`; см. «История изменений»). Базовая версия для реализации MVP. Новые фичи и изменения — следующими версиями.
 > Цель проекта — изучить C#/.NET (переход с C++) на реалистичной распределённой системе, местами «как в проде». С v1.2 стек брокера и доступа к данным совпадает с рабочим: RabbitMQ + MassTransit + EF Core.
 
 ---
@@ -16,7 +16,7 @@ TaskFlow — распределённый планировщик shell-зада�
 | F1 | Создать job: `command`, `start_at` (по умолчанию «сейчас»), `timeout`, `retry` |
 | F2 | Отложенный запуск по `start_at` (точность ≈ 1 с) |
 | F3 | Выполнение `bash -c` в отдельном процессе внутри пода воркера, с таймаутом |
-| F4 | Политика ретраев **на уровне job** (`max_attempts`, `retry_on`, `backoff`) |
+| F4 | Политика ретраев **на уровне job** (`max_attempts`, `retry_on` — любой набор из `lost`, `failed`, `timed_out`, `backoff`) |
 | F5 | Если воркер умер посреди job-а, это обнаруживается автоматически, и job ретраится или помечается `lost` |
 | F6 | Отмена job-а (cancel), и ожидающего, и уже запущенного |
 | F7 | Live-tail stdout/stderr в UI (SSE); логи живут в RabbitMQ Stream 24 ч |
@@ -116,6 +116,8 @@ stateDiagram-v2
     lost --> [*]
 ```
 
+«Ретрай разрешён» = в `retry_on` есть флаг причины (`AttemptLost` → `lost`, `JobFinished(failed)` → `failed`, `JobFinished(timed_out)` → `timed_out`) **и** `attempt < max_attempts` (§5.2). Причины независимы: например, `retry_on: [lost]` ретраит потерю воркера, но не ненулевой exit-код.
+
 Терминальные статусы: `succeeded`, `failed`, `timed_out`, `canceled`, `lost`. Переходы описаны в одном месте — `JobStateMachine` (MassTransit `MassTransitStateMachine<JobState>`). Событие с `attempt` не равным текущей попытке игнорируется (fencing). Терминальные строки **не удаляются**: `SetCompletedWhenFinalized` не используем, история job-ов нужна.
 
 ### 3.2. Счастливый путь
@@ -166,7 +168,7 @@ sequenceDiagram
 | Сеть до воркера пропала, процесс жив | RabbitMQ замечает по heartbeat (10–15 с) и возвращает `RunJob` в очередь — дальше как выше. Воркер, потеряв соединение, сам убивает процесс (self-fencing): ack по старому каналу уже невозможен |
 | Соединение живо, но код воркера завис | Ловится только `consumer_timeout` очереди `run-job` (выше максимального таймаута job-а). Известное ограничение MVP; дальше — lease попытки в saga |
 | Команда завершилась с exit ≠ 0 | `JobFinished(failed)`; saga: если `retry_on` содержит `failed` и попытки остались → `retrying` с backoff, иначе `failed` |
-| Таймаут | SIGTERM → 10 с grace → SIGKILL всего дерева процессов; `JobFinished(timed_out)` |
+| Таймаут | SIGTERM → 10 с grace → SIGKILL всего дерева процессов; `JobFinished(timed_out)`; saga: если `retry_on` содержит `timed_out` и попытки остались → `retrying` с backoff, иначе `timed_out`. Процесс убит до публикации события, поэтому новая попытка не пересекается со старой |
 | Два координатора одновременно обрабатывают события одного job-а | Пессимистичная блокировка строки saga (`SELECT … FOR UPDATE`) — второй ждёт; Dispatcher такие строки пропускает (`SKIP LOCKED`) |
 | Воркер получает SIGTERM (rolling update) | Перестаёт брать новые сообщения; ждёт текущий job до `ShutdownJobWait` (25 с), затем убивает процесс и публикует `JobFinished(failed, error = worker_shutdown)` |
 | Все воркеры мертвы | `RunJob` копится в очереди, job-ы в `queued`. Система восстанавливается сама, когда поднимается воркер; ловится алертом (§9) |
@@ -237,7 +239,7 @@ public sealed class JobState : SagaStateMachineInstance      // таблица j
     public DateTimeOffset StartAt { get; set; }
     public int TimeoutSeconds { get; set; }
     public int MaxAttempts { get; set; } = 1;
-    public RetryOn RetryOn { get; set; } = RetryOn.Lost;     // [Flags]
+    public RetryOn RetryOn { get; set; } = RetryOn.Lost;     // [Flags], см. ниже
     public int BackoffSeconds { get; set; }
 
     public int CurrentAttempt { get; set; }
@@ -256,6 +258,21 @@ public sealed class JobState : SagaStateMachineInstance      // таблица j
 }
 ```
 
+`RetryOn` живёт в `TaskFlow.Contracts.Jobs` (ADR-12):
+
+```csharp
+[Flags]
+public enum RetryOn
+{
+    None     = 0,        // не ретраить ни по какой причине
+    Lost     = 1 << 0,   // AttemptLost: воркер пропал / RunJob доставлен повторно
+    Failed   = 1 << 1,   // JobFinished(failed): exit ≠ 0, ошибка запуска, worker_shutdown
+    TimedOut = 1 << 2,   // JobFinished(timed_out)
+}
+```
+
+В БД — целое (битовая маска), в API — массив строк `"lost"`, `"failed"`, `"timed_out"` (§7). Значения флагов — часть контракта: не переставлять и не переиспользовать.
+
 | Таблица | Что | Ключи и индексы |
 |---|---|---|
 | `jobs` | строка saga = job | PK `correlation_id`; частичный индекс `due_at where due_at is not null`; уникальный частичный `idempotency_key where idempotency_key is not null`; `(current_state, correlation_id desc)` для списков |
@@ -269,9 +286,11 @@ Saga-репозиторий MassTransit: EF Core, **пессимистичная
 
 ```
 событие AttemptLost(n) или JobFinished(n, failed/timed_out):
-  n != CurrentAttempt                         → игнорировать (устаревшее/дубль)
-  ретрай разрешён (retry_on) и n < MaxAttempts → state = retrying, DueAt = now + backoff
-  иначе                                       → терминальный статус (lost / failed / timed_out)
+  n != CurrentAttempt                              → игнорировать (устаревшее/дубль)
+  RetryOn.HasFlag(причина) и n < MaxAttempts        → state = retrying, DueAt = now + backoff
+  иначе                                            → терминальный статус (lost / failed / timed_out)
+
+  причина: AttemptLost → Lost; JobFinished(failed) → Failed; JobFinished(timed_out) → TimedOut
 
 событие JobDue:
   state = scheduled → CurrentAttempt = 1;   state = queued; Send RunJob(attempt 1)
@@ -428,6 +447,8 @@ Idempotency-Key: 6f1c2a1e-8a52-4d3b-9a0e-2b7f0c9d4e11
   "retry": { "maxAttempts": 3, "retryOn": ["lost", "failed"], "backoffSeconds": 10 }
 }
 ```
+
+`retryOn` — массив без повторов из `"lost"`, `"failed"`, `"timed_out"` (флаги `RetryOn`, §5.1); `[]` = `None`. Если `retry` не указан — `maxAttempts = 1`, `retryOn = ["lost"]` (at-most-once, §1.3). Неизвестное значение → `400` ValidationProblem. В ответах `GET` поле отдаётся в том же виде.
 
 Ответы `POST /api/jobs`:
 
@@ -684,6 +705,13 @@ flowchart LR
 - **Почему:** схема логов почти не меняется по сравнению с NATS (повтор истории для нового подключения); один брокер; RabbitMQ Streams полезны и на работе.
 - **Цена:** второй клиент RabbitMQ; фильтрация по `JobId` на стороне читателя.
 
+### ADR-12. `RetryOn` — независимые флаги по причине неудачи (v1.3)
+- **Проблема:** до v1.3 переход `running → retrying` по `timed_out` был в диаграмме (§3.1), но не было сказано, какой флаг его разрешает.
+- **Рассматривали:** `Lost | Failed`, где таймаут считается разновидностью `failed` — меньше значений в enum и API, но нельзя сказать «ретраить exit ≠ 0, но не таймауты».
+- **Решение:** `[Flags] enum RetryOn { None = 0, Lost = 1, Failed = 2, TimedOut = 4 }` в `TaskFlow.Contracts.Jobs`; каждая причина неудачи ретраится только по своему флагу. Нулевое значение — `None` (конвенция .NET, CA1008). В API — строки `lost` / `failed` / `timed_out`, как имена статусов.
+- **Почему:** таймаут часто детерминирован (`sleep 60` при `timeout 5` упадёт и во второй раз), поэтому ретраить его стоит только по явному выбору; имена флагов совпадают с `JobResult` и статусами — одно понятие пишется одинаково.
+- **Цена:** ещё одно значение в enum, API и форме UI; маппинг `TimedOut` ↔ `"timed_out"` для API пишется явно (camelCase-политика дала бы `timedOut`).
+
 ---
 
 ## 12. План работ и критерии готовности
@@ -868,7 +896,8 @@ UI: страница run-а с графом (Angular + dagre или elkjs), уз
 
 | Версия | Дата | Изменения |
 |---|---|---|
-| **v1.2** | 2026-11-19 | Брокер — RabbitMQ + MassTransit v8 вместо NATS JetStream; состояние job-а — saga MassTransit на EF Core с inbox/outbox; попытка = сообщение, повторная доставка не выполняется; отложенный старт и backoff через `due_at`; логи job-ов — RabbitMQ Stream; доступ к данным — EF Core вместо Dapper + DbUp; DAG через `RunStateMachine` (§1–§7, §9–§15, ADR-1, ADR-3, ADR-4, ADR-5, ADR-6, ADR-10, ADR-11) |
+| **v1.3** | 2026-11-19 | Флаги `RetryOn`: `None`, `Lost`, `Failed`, `TimedOut` — каждая причина неудачи ретраится только по своему флагу; в API — `lost` / `failed` / `timed_out`, умолчание `["lost"]` (§1.1 F4, §3.1, §3.3, §5.1, §5.2, §7, ADR-12) |
+| v1.2 | 2026-11-19 | Брокер — RabbitMQ + MassTransit v8 вместо NATS JetStream; состояние job-а — saga MassTransit на EF Core с inbox/outbox; попытка = сообщение, повторная доставка не выполняется; отложенный старт и backoff через `due_at`; логи job-ов — RabbitMQ Stream; доступ к данным — EF Core вместо Dapper + DbUp; DAG через `RunStateMachine` (§1–§7, §9–§15, ADR-1, ADR-3, ADR-4, ADR-5, ADR-6, ADR-10, ADR-11) |
 | v1.1.1 | 2026-11-18 | Основная ветка — `master` (а не `main`): §10.2, §10.5, ADR-8, §12; тег образа dev-сборок — `:master` |
 | v1.1 | 2026-11-18 | Процесс разработки: trunk-based git, CI (GitHub Actions), публикация образов в GHCR, GitOps-выкатка через Argo CD (§10.2, §10.3, §10.5, ADR-8, ADR-9, §12) |
 | v1.0 | 2026-11-18 | Спека утверждена как базовая для MVP |

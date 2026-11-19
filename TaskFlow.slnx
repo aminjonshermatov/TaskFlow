@@ -2,6 +2,9 @@
   <Folder Name="/Solution Items/">
     <File Path="compose.yaml" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TaskFlow.UnitTests/TaskFlow.UnitTests.csproj" />
+  </Folder>
   <Project Path="src/TaskFlow.Contracts/TaskFlow.Contracts.csproj" />
   <Project Path="src/TaskFlow.Coordinator/TaskFlow.Coordinator.csproj" />
   <Project Path="src/TaskFlow.Migrator/TaskFlow.Migrator.csproj" />
