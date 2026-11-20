@@ -1,8 +1,8 @@
 using DbUp;
 
-var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__TaskFlow")
+var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__Postgres")
                        ?? throw new InvalidOperationException(
-                           "Environment variable ConnectionStrings__TaskFlow is required.");
+                           "Environment variable ConnectionStrings__Postgres is required.");
 
 var scriptsDirectory = Path.Combine(AppContext.BaseDirectory, "Scripts");
 

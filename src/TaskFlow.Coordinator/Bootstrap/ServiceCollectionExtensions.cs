@@ -8,12 +8,12 @@ public static class ServiceCollectionExtensions
 {
   public static IServiceCollection AddTaskFlowCoordinator(this IServiceCollection services, IConfiguration configuration)
   {
-    var connectionString = configuration.GetConnectionString("TaskFlow")
-                           ?? throw new InvalidOperationException("Connection string 'TaskFlow' is not configured.");
+    var postgresConnectionString = configuration.GetConnectionString("Postgres")
+                                   ?? throw new InvalidOperationException("Connection string 'Postgres' is not configured.");
 
     services.AddSingleton<NpgsqlDataSource>(_ =>
     {
-      var builder = new NpgsqlDataSourceBuilder(connectionString);
+      var builder = new NpgsqlDataSourceBuilder(postgresConnectionString);
       builder.MapEnum<JobStatus>("job_status");
 
       return builder.Build();
