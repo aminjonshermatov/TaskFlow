@@ -13,6 +13,9 @@ trim_trailing_whitespace = true
 # Two trailing spaces are a hard line break in Markdown.
 trim_trailing_whitespace = false
 
+[**/Migrations/*.cs]
+generated_code = true
+
 # C# files
 [*.cs]
 tab_width = 2
