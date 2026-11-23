@@ -8,7 +8,7 @@ namespace TaskFlow.Persistence;
 public sealed class TaskFlowDbContext(DbContextOptions<TaskFlowDbContext> options)
   : DbContext(options)
 {
-  public static void ConfigureOptions(DbContextOptionsBuilder<TaskFlowDbContext> builder, string connectionString)
+  public static void ConfigureOptions(DbContextOptionsBuilder builder, string connectionString)
   {
     builder.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();
   }

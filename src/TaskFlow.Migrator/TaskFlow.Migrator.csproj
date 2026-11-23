@@ -3,22 +3,23 @@
     <PropertyGroup>
       <OutputType>Exe</OutputType>
     </PropertyGroup>
-    
+
     <ItemGroup>
-      <PackageReference Include="dbup-postgresql" />
+      <PackageReference Include="Microsoft.Extensions.Hosting" />
     </ItemGroup>
-    
+
     <ItemGroup>
       <Content Include="..\..\.dockerignore">
         <Link>.dockerignore</Link>
       </Content>
     </ItemGroup>
-    
+
     <ItemGroup>
-      <None Update="Scripts/**/*.sql">
-        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-      </None>
+      <ProjectReference Include="..\TaskFlow.Persistence\TaskFlow.Persistence.csproj" />
+    </ItemGroup>
+  
+    <ItemGroup>
+      <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
     </ItemGroup>
 
 </Project>
