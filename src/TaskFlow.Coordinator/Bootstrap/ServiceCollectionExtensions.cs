@@ -1,6 +1,5 @@
-using Npgsql;
-
 using TaskFlow.Coordinator.Jobs;
+using TaskFlow.Persistence;
 
 namespace TaskFlow.Coordinator.Bootstrap;
 
@@ -10,19 +9,10 @@ public static class ServiceCollectionExtensions
   {
     var postgresConnectionString = configuration.GetConnectionString("Postgres")
                                    ?? throw new InvalidOperationException("Connection string 'Postgres' is not configured.");
-
-    services.AddSingleton<NpgsqlDataSource>(_ =>
-    {
-      var builder = new NpgsqlDataSourceBuilder(postgresConnectionString);
-      builder.MapEnum<JobStatus>("job_status");
-
-      return builder.Build();
-    });
+    services.AddDbContextPool<TaskFlowDbContext>(optionsBuilder => TaskFlowDbContext.ConfigureOptions(optionsBuilder, postgresConnectionString));
 
     services.AddSingleton(TimeProvider.System);
-
-    services.AddSingleton<IJobRepository, DapperJobRepository>();
-    services.AddSingleton<JobService>();
+    services.AddScoped<JobService>();
 
     return services;
   }

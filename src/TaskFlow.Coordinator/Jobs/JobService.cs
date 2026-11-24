@@ -1,26 +1,35 @@
+using TaskFlow.Persistence;
+using TaskFlow.Persistence.Entities;
+
 namespace TaskFlow.Coordinator.Jobs;
 
-public sealed class JobService(IJobRepository jobRepository, TimeProvider timeProvider)
+public sealed class JobService(TaskFlowDbContext dbContext, TimeProvider timeProvider)
 {
-  public async Task<Job> SubmitAsync(SubmitJobCommand command, CancellationToken cancellationToken)
+  public async Task<JobState> SubmitAsync(SubmitJobCommand command, CancellationToken cancellationToken)
   {
     ArgumentNullException.ThrowIfNull(command);
     ArgumentException.ThrowIfNullOrWhiteSpace(command.Command);
-    ArgumentOutOfRangeException.ThrowIfNegativeOrZero(command.MaxDurationSeconds);
+    ArgumentOutOfRangeException.ThrowIfNegativeOrZero(command.TimeoutSeconds);
 
     var now = timeProvider.GetUtcNow();
-    var job = new Job(
-        Id: Guid.CreateVersion7(now),
-        Command: command.Command,
-        MaxDurationSeconds: command.MaxDurationSeconds,
-        Status: JobStatus.Pending,
-        WorkerId: null,
-        ExitCode: null,
-        CreatedAt: now,
-        StartedAt: null,
-        FinishedAt: null);
+    var startAt = command.StartAt.ToUniversalTime();
+    var jobState = new JobState
+    {
+      CorrelationId = Guid.CreateVersion7(now),
+      CurrentState = JobStatus.Scheduled,
+      Command = command.Command,
+      TimeoutSeconds = command.TimeoutSeconds,
+      BackoffSeconds = command.BackoffSeconds,
+      MaxAttempts = command.MaxAttempts,
+      RetryOn = command.RetryOn,
+      DueAt = startAt,
+      StartAt = startAt,
+      CreatedAt = now,
+      UpdatedAt = now,
+    };
 
-    await jobRepository.CreateAsync(job, cancellationToken);
-    return job;
+    await dbContext.Jobs.AddAsync(jobState, cancellationToken);
+    await dbContext.SaveChangesAsync(cancellationToken);
+    return jobState;
   }
 }

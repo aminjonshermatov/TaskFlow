@@ -1,12 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
     <ItemGroup>
-        <PackageReference Include="Dapper" />
-        <PackageReference Include="Npgsql" />
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\TaskFlow.Contracts\TaskFlow.Contracts.csproj" />
+      <ProjectReference Include="..\TaskFlow.Persistence\TaskFlow.Persistence.csproj" />
     </ItemGroup>
 
     <ItemGroup>
