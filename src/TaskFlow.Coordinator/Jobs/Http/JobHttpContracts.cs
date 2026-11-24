@@ -1,29 +1,38 @@
+using TaskFlow.Persistence.Entities;
+
 namespace TaskFlow.Coordinator.Jobs.Http;
 
+public sealed record RetryHttpRequest(
+  int? MaxAttempts,
+  string[]? RetryOn,
+  int? BackoffSeconds);
+
 public sealed record SubmitJobHttpRequest(
-    string Command,
-    int MaxDurationSeconds);
+  string Command,
+  DateTimeOffset StartAt,
+  int TimeoutSeconds,
+  RetryHttpRequest? Retry);
 
 public sealed record JobHttpResponse(
     Guid Id,
     string Command,
-    int MaxDurationSeconds,
+    int TimeoutSeconds,
     string Status,
     string? WorkerId,
     int? ExitCode,
     DateTimeOffset CreatedAt,
-    DateTimeOffset? StartedAt,
+    DateTimeOffset? StartAt,
     DateTimeOffset? FinishedAt)
 {
-  public static JobHttpResponse FromDomain(Job job) =>
+  public static JobHttpResponse FromDomain(JobState job) =>
       new(
-          job.Id,
+          job.CorrelationId,
           job.Command,
-          job.MaxDurationSeconds,
-          job.Status.ToString().ToLowerInvariant(),
+          job.TimeoutSeconds,
+          job.CurrentState,
           job.WorkerId,
           job.ExitCode,
           job.CreatedAt,
-          job.StartedAt,
+          job.StartAt,
           job.FinishedAt);
 }

@@ -1,32 +1,71 @@
-using DbUp;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
-var connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__Postgres")
-                       ?? throw new InvalidOperationException(
-                           "Environment variable ConnectionStrings__Postgres is required.");
+using TaskFlow.Migrator;
+using TaskFlow.Persistence;
 
-var scriptsDirectory = Path.Combine(AppContext.BaseDirectory, "Scripts");
+var builder = Host.CreateApplicationBuilder(args);
 
-if (!Directory.Exists(scriptsDirectory))
+var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres")
+                               ?? throw new InvalidOperationException("Connection string 'Postgres' is not configured.");
+builder.Services.AddDbContext<TaskFlowDbContext>(optionsBuilder => TaskFlowDbContext.ConfigureOptions(optionsBuilder, postgresConnectionString));
+
+builder.Services
+  .AddOptions<BackoffOptions>()
+  .Bind(builder.Configuration.GetSection(BackoffOptions.SectionName));
+builder.Services.AddSingleton<IValidateOptions<BackoffOptions>, ValidateBackoffOptions>();
+
+using var app = builder.Build();
+
+var timeProvider = TimeProvider.System;
+
+var log = app.Services.GetRequiredService<ILogger<Program>>();
+using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+try
 {
-  throw new DirectoryNotFoundException(
-      $"Migrations directory was not found: {scriptsDirectory}");
+  var backoffOptions = app.Services.GetRequiredService<IOptions<BackoffOptions>>().Value;
+
+  await using var scope = app.Services.CreateAsyncScope();
+  var db = scope.ServiceProvider.GetRequiredService<TaskFlowDbContext>();
+  await WaitForDatabaseAsync(
+    db, log,
+    backoffOptions,
+    timeProvider,
+    cts.Token);
+  await db.Database.MigrateAsync(cts.Token);
+  log.MigratedSuccessfully();
+  return 0;
 }
-
-var upgrader = DeployChanges.To
-    .PostgresqlDatabase(connectionString)
-    .WithScriptsFromFileSystem(scriptsDirectory)
-    .JournalToPostgresqlTable("public", "taskflow_schema_versions")
-    .WithTransaction()
-    .LogToConsole()
-    .Build();
-
-var result = upgrader.PerformUpgrade();
-
-if (!result.Successful)
+catch (Exception ex)
 {
-  Console.Error.WriteLine(result.Error);
+  log.MigrationFailed(ex);
   return 1;
 }
 
-Console.WriteLine("Database is up to date.");
-return 0;
+static async Task WaitForDatabaseAsync(
+  TaskFlowDbContext dbContext,
+  ILogger logger,
+  BackoffOptions backoffOptions,
+  TimeProvider timeProvider,
+  CancellationToken cancellationToken)
+{
+  TimeSpan delay = TimeSpan.FromSeconds(backoffOptions.InitialDelayInSeconds);
+  for (int retry = 1; retry <= backoffOptions.MaxRetry; ++retry, delay = delay.Multiply(backoffOptions.DelayMultiplier))
+  {
+    logger.ConnectingToDatabase(retry, backoffOptions.MaxRetry);
+    if (await dbContext.Database.CanConnectAsync(cancellationToken))
+    {
+      return;
+    }
+    logger.ConnectionToDatabaseFailed(retry, backoffOptions.MaxRetry, delay);
+    if (retry < backoffOptions.MaxRetry)
+    {
+      await Task.Delay(delay, timeProvider, cancellationToken);
+    }
+  }
+  throw new TimeoutException("Could not connect to database");
+}

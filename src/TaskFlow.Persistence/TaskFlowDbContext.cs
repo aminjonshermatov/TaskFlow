@@ -3,12 +3,16 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 
+using TaskFlow.Persistence.Entities;
+
 namespace TaskFlow.Persistence;
 
 public sealed class TaskFlowDbContext(DbContextOptions<TaskFlowDbContext> options)
   : DbContext(options)
 {
-  public static void ConfigureOptions(DbContextOptionsBuilder<TaskFlowDbContext> builder, string connectionString)
+  public DbSet<JobState> Jobs { get; set; } = null!;
+
+  public static void ConfigureOptions(DbContextOptionsBuilder builder, string connectionString)
   {
     builder.UseNpgsql(connectionString).UseSnakeCaseNamingConvention();
   }
