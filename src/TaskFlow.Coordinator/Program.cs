@@ -16,11 +16,6 @@ builder.Services.AddScoped<JobService>();
 
 var app = builder.Build();
 
-if (!app.Environment.IsEnvironment("Container"))
-{
-  app.UseHttpsRedirection();
-}
-
 app.MapGet("/ping", () => "pong");
 
 app.MapDefaultEndpoints();
