@@ -10,4 +10,5 @@
   <Project Path="src/TaskFlow.Migrator/TaskFlow.Migrator.csproj" />
   <Project Path="src/TaskFlow.Worker/TaskFlow.Worker.csproj" />
   <Project Path="src/TaskFlow.Persistence/TaskFlow.Persistence.csproj" />
+  <Project Path="src/TaskFlow.ServiceDefaults/TaskFlow.ServiceDefaults.csproj" />
 </Solution>

@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -10,10 +9,7 @@ using TaskFlow.Persistence;
 
 var builder = Host.CreateApplicationBuilder(args);
 
-var postgresConnectionString = builder.Configuration.GetConnectionString("Postgres")
-                               ?? throw new InvalidOperationException("Connection string 'Postgres' is not configured.");
-builder.Services.AddDbContext<TaskFlowDbContext>(optionsBuilder => TaskFlowDbContext.ConfigureOptions(optionsBuilder, postgresConnectionString));
-
+builder.AddPostgres();
 builder.Services
   .AddOptions<BackoffOptions>()
   .Bind(builder.Configuration.GetSection(BackoffOptions.SectionName));
