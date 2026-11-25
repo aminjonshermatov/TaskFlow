@@ -1,4 +1,15 @@
-﻿services:
+﻿x-rabbitmq-env: &rabbitmq-env
+  RabbitMq__Host: rabbitmq
+  RabbitMq__Port: "5672"
+  RabbitMq__VHost: /
+  RabbitMq__Username: ${RABBITMQ_USER}
+  RabbitMq__Password: ${RABBITMQ_PASSWORD}
+  RabbitMq__HeartBeatSeconds: "10"
+
+x-postgres-env: &postgres-env
+  Postgres__ConnectionString: Host=postgres;Port=5432;Database=taskflow;Username=taskflow;Password=${POSTGRES_PASSWORD}
+
+services:
   rabbitmq:
     image: rabbitmq:4-management-alpine
     hostname: rabbitmq
@@ -50,6 +61,8 @@
       POSTGRES_DB: taskflow
       POSTGRES_USER: taskflow
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -65,12 +78,11 @@
       context: .
       dockerfile: src/TaskFlow.Coordinator/Dockerfile
     environment:
-      ASPNETCORE_ENVIRONMENT: Container
-      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=taskflow;Username=taskflow;Password=${POSTGRES_PASSWORD}
-      ConnectionStrings__RabbitMQ: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      <<: [*rabbitmq-env, *postgres-env]
       OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4317
     ports:
-      - "8080:8080"
+      # Host port range: each replica gets the next free port (8080, 8081, ...) with --scale coordinator=N (N <= 5).
+      - "8080-8084:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -86,8 +98,11 @@
       context: .
       dockerfile: src/TaskFlow.Worker/Dockerfile
     environment:
-      ConnectionStrings__RabbitMQ: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
+      <<: *rabbitmq-env
       OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4317
+    ports:
+      # Health endpoints only (/healthz/*). Host port range so --scale worker=N works (N <= 10).
+      - "8090-8099:8080"
     restart: unless-stopped
     depends_on:
       rabbitmq:
@@ -98,7 +113,7 @@
       context: .
       dockerfile: src/TaskFlow.Migrator/Dockerfile
     environment:
-      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=taskflow;Username=taskflow;Password=${POSTGRES_PASSWORD}
+      <<: *postgres-env
       OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4317
     depends_on:
       postgres:
