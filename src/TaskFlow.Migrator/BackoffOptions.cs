@@ -17,4 +17,8 @@ internal sealed class BackoffOptions
   [Required]
   [Range(1, 5, ErrorMessage = "Positive integers <= 5")]
   public int DelayMultiplier { get; set; } = 2;
+
+  [Required]
+  [Range(1, 2 * 60 * 60, ErrorMessage = "Positive seconds not greater 2 hour")]
+  public int TotalTimeoutSeconds { get; set; } = 161;
 }

@@ -6,6 +6,7 @@
 
     <ItemGroup>
       <PackageReference Include="Microsoft.Extensions.Hosting" />
+      <PackageReference Include="RabbitMQ.Client" />
     </ItemGroup>
 
     <ItemGroup>
@@ -16,10 +17,12 @@
 
     <ItemGroup>
       <ProjectReference Include="..\TaskFlow.Persistence\TaskFlow.Persistence.csproj" />
+      <ProjectReference Include="..\TaskFlow.ServiceDefaults\TaskFlow.ServiceDefaults.csproj" />
     </ItemGroup>
-  
+
     <ItemGroup>
       <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
+      <InternalsVisibleTo Include="TaskFlow.UnitTests" />
     </ItemGroup>
 
 </Project>

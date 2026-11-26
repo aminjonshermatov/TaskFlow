@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\TaskFlow.Contracts\TaskFlow.Contracts.csproj" />
+    <ProjectReference Include="..\..\src\TaskFlow.Migrator\TaskFlow.Migrator.csproj" />
   </ItemGroup>
 
 </Project>

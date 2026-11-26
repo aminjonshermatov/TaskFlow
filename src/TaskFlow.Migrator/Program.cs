@@ -1,4 +1,3 @@
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -6,10 +5,15 @@ using Microsoft.Extensions.Options;
 
 using TaskFlow.Migrator;
 using TaskFlow.Persistence;
+using TaskFlow.Persistence.Options;
+using TaskFlow.ServiceDefaults;
+using TaskFlow.ServiceDefaults.Options;
 
 var builder = Host.CreateApplicationBuilder(args);
 
 builder.AddPostgres();
+builder.AddServiceDefaults();
+
 builder.Services
   .AddOptions<BackoffOptions>()
   .Bind(builder.Configuration.GetSection(BackoffOptions.SectionName));
@@ -17,51 +21,53 @@ builder.Services.AddSingleton<IValidateOptions<BackoffOptions>, ValidateBackoffO
 
 using var app = builder.Build();
 
-var timeProvider = TimeProvider.System;
-
 var log = app.Services.GetRequiredService<ILogger<Program>>();
-using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(2));
+
+BackoffOptions backoffOptions;
+RabbitMqOptions rabbitMqOptions;
 try
 {
-  var backoffOptions = app.Services.GetRequiredService<IOptions<BackoffOptions>>().Value;
-
-  await using var scope = app.Services.CreateAsyncScope();
-  var db = scope.ServiceProvider.GetRequiredService<TaskFlowDbContext>();
-  await WaitForDatabaseAsync(
-    db, log,
-    backoffOptions,
-    timeProvider,
-    cts.Token);
-  await db.Database.MigrateAsync(cts.Token);
-  log.MigratedSuccessfully();
-  return 0;
+  backoffOptions = app.Services.GetRequiredService<IOptions<BackoffOptions>>().Value;
+  rabbitMqOptions = app.Services.GetRequiredService<IOptions<RabbitMqOptions>>().Value;
+  _ = app.Services.GetRequiredService<IOptions<PostgresOptions>>().Value;
 }
-catch (Exception ex)
+catch (OptionsValidationException optionsValidationException)
 {
-  log.MigrationFailed(ex);
+  log.OptionsValidationFailed(optionsValidationException);
   return 1;
 }
 
-static async Task WaitForDatabaseAsync(
-  TaskFlowDbContext dbContext,
-  ILogger logger,
-  BackoffOptions backoffOptions,
-  TimeProvider timeProvider,
-  CancellationToken cancellationToken)
+using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(backoffOptions.TotalTimeoutSeconds));
+
+try
 {
-  TimeSpan delay = TimeSpan.FromSeconds(backoffOptions.InitialDelayInSeconds);
-  for (int retry = 1; retry <= backoffOptions.MaxRetry; ++retry, delay = delay.Multiply(backoffOptions.DelayMultiplier))
-  {
-    logger.ConnectingToDatabase(retry, backoffOptions.MaxRetry);
-    if (await dbContext.Database.CanConnectAsync(cancellationToken))
-    {
-      return;
-    }
-    logger.ConnectionToDatabaseFailed(retry, backoffOptions.MaxRetry, delay);
-    if (retry < backoffOptions.MaxRetry)
-    {
-      await Task.Delay(delay, timeProvider, cancellationToken);
-    }
-  }
-  throw new TimeoutException("Could not connect to database");
+  var timeProvider = TimeProvider.System;
+  await using var scope = app.Services.CreateAsyncScope();
+
+  var db = scope.ServiceProvider.GetRequiredService<TaskFlowDbContext>();
+
+  await DatabaseAndMessagingInitializer.MakeDatabaseMigrationsAsync(db, backoffOptions, timeProvider, log, cts.Token);
+  await DatabaseAndMessagingInitializer.ConfigureRabbitMqStreamAsync(rabbitMqOptions, backoffOptions, timeProvider, log,
+    cts.Token);
+  return 0;
+}
+catch (OperationCanceledException operationCanceledException) when (cts.IsCancellationRequested)
+{
+  log.TotalTimeoutExceeded(operationCanceledException, backoffOptions.TotalTimeoutSeconds);
+  return 1;
+}
+catch (CannotCreateStreamException streamException)
+{
+  log.CannotCreateStream(streamException);
+  return 1;
+}
+catch (TimeoutException timeoutException)
+{
+  log.RetriesExhausted(timeoutException, backoffOptions.MaxRetry);
+  return 1;
+}
+catch (Exception ex)
+{
+  log.UnexpectedError(ex);
+  return 1;
 }

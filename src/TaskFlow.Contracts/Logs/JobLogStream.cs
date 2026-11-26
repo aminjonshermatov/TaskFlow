@@ -12,5 +12,5 @@ public static class JobLogStream
 
   public static readonly TimeSpan MaxAge = TimeSpan.FromHours(24);
 
-  public const ulong MaxLengthBytes = 1024UL * 1024 * 1024;
+  public const long MaxLengthBytes = 1024L * 1024 * 1024;
 }
