@@ -3,6 +3,7 @@
     <File Path="compose.yaml" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/TaskFlow.IntegrationTests/TaskFlow.IntegrationTests.csproj" />
     <Project Path="tests/TaskFlow.UnitTests/TaskFlow.UnitTests.csproj" />
   </Folder>
   <Project Path="src/TaskFlow.Contracts/TaskFlow.Contracts.csproj" />
