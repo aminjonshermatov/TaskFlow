@@ -23,6 +23,7 @@
     <ItemGroup>
       <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />
       <InternalsVisibleTo Include="TaskFlow.UnitTests" />
+      <InternalsVisibleTo Include="TaskFlow.IntegrationTests" />
     </ItemGroup>
 
 </Project>
