@@ -41,7 +41,7 @@ jobs:
         run: dotnet build TaskFlow.slnx --no-restore -c Release
 
       - name: Check EF Core model has a migration
-        run: dotnet ef migrations has-pending-model-changes --project src/TaskFlow.Persistence --no-build -c Release
+        run: dotnet ef migrations has-pending-model-changes --project src/TaskFlow.Persistence --no-build --configuration Release
 
       - name: Unit Tests
         run: >-
