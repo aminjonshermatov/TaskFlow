@@ -24,12 +24,13 @@ jobs:
         with:
           cache: true
           global-json-file: global.json
+          cache-dependency-path: '**/packages.lock.json'
 
       - name: Tool restore
         run: dotnet tool restore
 
       - name: Restore dependencies
-        run: dotnet restore --locked-mode
+        run: dotnet restore --locked-mode --use-lock-file
 
       - name: Build
         run: dotnet build --no-restore --configuration Release
