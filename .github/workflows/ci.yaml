@@ -40,14 +40,14 @@ jobs:
         run: dotnet build TaskFlow.slnx --no-restore --configuration Release
 
       - name: Unit Tests
-        run: dotnet test --project tests/TaskFlow.UnitTests --no-build -c Release --report-xunit-trx --report-xunit-trx-filename TestResults/unit.trx
+        run: dotnet test --project tests/TaskFlow.UnitTests --no-build -c Release --report-xunit-trx --results-directory TestResults/unit
 
       - name: Integration Tests
-        run: dotnet test --project tests/TaskFlow.IntegrationTests --no-build -c Release --report-xunit-trx --report-xunit-trx-filename TestResults/integration.trx
+        run: dotnet test --project tests/TaskFlow.IntegrationTests --no-build -c Release --report-xunit-trx --results-directory TestResults/integration
 
       - name: Upload test results
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: TestResults/*.trx
+          path: TestResults/**/*.trx
