@@ -1,5 +1,7 @@
 # TaskFlow
 
+[![CI](https://github.com/aminjonshermatov/TaskFlow/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/aminjonshermatov/TaskFlow/actions/workflows/ci.yml)
+
 Распределённый исполнитель bash-задач: web-UI → Coordinator → RabbitMQ (MassTransit) → Worker-ы, состояние в PostgreSQL (EF Core, saga MassTransit), наблюдаемость через OpenTelemetry → Grafana.
 
 Учебный проект: изучение C#/.NET после C++ на системе, устроенной «почти как в проде» — несколько координаторов и воркеров, saga, outbox/inbox, at-most-once/at-least-once, ретраи, отмена, live-логи, k8s.

@@ -1,0 +1,117 @@
+name: TaskFlow CI
+
+on:
+  pull_request:
+  push:
+    branches: ["master"]
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
+
+
+jobs:
+  build-and-test:
+    name: build-and-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          cache: true
+          global-json-file: global.json
+          cache-dependency-path: '**/packages.lock.json'
+
+      - name: Tool restore
+        run: dotnet tool restore
+
+      - name: Restore dependencies
+        run: dotnet restore TaskFlow.slnx --locked-mode
+
+      - name: Format
+        run: dotnet format TaskFlow.slnx --no-restore --verify-no-changes
+
+      - name: Build
+        run: dotnet build TaskFlow.slnx --no-restore -c Release
+
+      - name: Check EF Core model has a migration
+        run: dotnet ef migrations has-pending-model-changes --project src/TaskFlow.Persistence --no-build --configuration Release
+
+      - name: Unit Tests
+        run: >-
+          dotnet test --project tests/TaskFlow.UnitTests --no-build -c Release
+          --results-directory TestResults
+          --report-xunit-trx --report-xunit-trx-filename unit.trx
+          --report-xunit-html --report-xunit-html-filename unit.html
+          --report-ctrf --report-ctrf-filename unit.ctrf.json
+
+      - name: Integration Tests
+        run: >-
+          dotnet test --project tests/TaskFlow.IntegrationTests --no-build -c Release
+          --results-directory TestResults
+          --report-xunit-trx --report-xunit-trx-filename integration.trx
+          --report-xunit-html --report-xunit-html-filename integration.html
+          --report-ctrf --report-ctrf-filename integration.ctrf.json
+
+      - name: Test summary
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          shopt -s nullglob
+          reports=(TestResults/*.ctrf.json)
+          {
+            echo "## Tests"
+            if [ ${#reports[@]} -eq 0 ]; then
+              echo "No test reports found: tests did not run (see the failed step above)."
+              exit 0
+            fi
+            echo "| Suite | Total | ✅ Passed | ❌ Failed | ⏭️ Skipped |"
+            echo "|---|---:|---:|---:|---:|"
+            for f in "${reports[@]}"; do
+              jq -r --arg suite "$(basename "$f" .ctrf.json)" \
+                '.results.summary | "| \($suite) | \(.tests) | \(.passed) | \(.failed) | \(.skipped) |"' "$f"
+            done
+            echo
+            jq -r '.results.tests[] | select(.status == "failed")
+              | "<details><summary>❌ <code>\(.name)</code></summary>\n\n```\n\(.message // "")\n\(.trace // "")\n```\n\n</details>"' \
+              "${reports[@]}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: TestResults/*
+          if-no-files-found: ignore
+
+  docker:
+    name: docker (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [Coordinator, Worker, Migrator]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: src/TaskFlow.${{ matrix.service }}/Dockerfile
+          push: false
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
