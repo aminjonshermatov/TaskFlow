@@ -22,7 +22,17 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
+          cache: true
           global-json-file: global.json
 
-      - name: Restore deps
+      - name: Tool restore
+        run: dotnet tool restore
+
+      - name: Restore dependencies
         run: dotnet restore --locked-mode
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Format
+        run: dotnet format --no-restore --verify-no-changes --configuration Release
