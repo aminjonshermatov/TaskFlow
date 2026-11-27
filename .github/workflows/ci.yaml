@@ -1,4 +1,4 @@
-name: TaskFLow CI
+name: TaskFlow CI
 
 on:
   pull_request:
@@ -22,8 +22,7 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 10.0.15
           global-json-file: global.json
 
       - name: Restore deps
-        run: dotnet tool restore
+        run: dotnet restore --locked-mode
