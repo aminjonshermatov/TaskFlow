@@ -32,8 +32,8 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore --locked-mode --use-lock-file
 
+      - name: Format
+        run: dotnet format --no-restore --verify-no-changes
+
       - name: Build
         run: dotnet build --no-restore --configuration Release
-
-      - name: Format
-        run: dotnet format --no-restore --verify-no-changes --configuration Release
